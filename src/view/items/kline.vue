@@ -1,5 +1,10 @@
 <template>
-  <div id="klineChart"/>
+  <n-card>
+    <template #header>
+      <kline-menu/>
+    </template>
+    <div id="klineChart"/>
+  </n-card>
 </template>
 
 <script setup>
@@ -9,6 +14,7 @@ import {ma} from 'moving-averages';
 import macd from 'macd';
 import {computed, onMounted, ref} from "vue";
 import {useStore} from "vuex";
+import KlineMenu from "./klineMenu.vue";
 
 const store = useStore()
 const G = store.getters
@@ -32,13 +38,29 @@ const indicateOpt = computed(() => {
   else return ['vol', 'amount', 'macd']
 })
 
-let toolTip, kline, myChart
+let kline, myChart
 let ma5, ma10, ma20, vol, vol1, vol2, area, klineData
 
 onMounted(() => {
   initChart()
   plot()
 })
+
+const plotMarker = () => {
+  S.axios({
+    url: '/api/back/logs',
+    params: {
+      code: G.code,
+      coll: 'win_rate',
+    }
+  }).then(res => {
+    let logs = res.data.data['logs']
+    kline.setMarkers(logs.map(i => {
+      if (i.type===0) return {time: i.time, position: 'belowBar', color: '#e91e63', shape: 'arrowUp', text: '买'}
+      else return {time: i.time, position: 'aboveBar', color: '#2196F3', shape: 'arrowDown', text: '卖'}
+    }))
+  })
+}
 
 // 绘制主图
 const plotMain = () => {
@@ -47,9 +69,7 @@ const plotMain = () => {
   ma20.setData([])
 
   let arr = [], arr2, arr3, avgKline
-  let close = klineData.map(i => {
-    return i.close
-  })
+  let close = klineData.map(i => i.close)
 
   switch (mainOpt[main]) {
     case 'boll':
@@ -84,7 +104,6 @@ const plotMain = () => {
   }
 
   switch (mainOpt[main]) {
-      // 平均K线
     case 'avgKline':
       avgKline = JSON.parse(JSON.stringify(klineData))
       for (let i = 1; i < avgKline.length; i++) {
@@ -109,23 +128,15 @@ const plotSub = () => {
   area.setData([])
 
   let idc = indicateOpt.value[indicate]
-  let close = klineData.map(i => {
-    return i.close
-  })
+  let close = klineData.map(i => i.close)
 
-  // 成交量 成交额
-  if (['vol', 'amount'].includes(idc)) {
-    // 成交量均线
-    let bar = klineData.map(i => {
-      return i[idc]
-    })
+  if (idc === 'vol' || idc === 'amount') {
+    let bar = klineData.map(i => i[idc])
     let ma5 = ma(bar, 5)
     let ma10 = ma(bar, 10)
 
     klineData.forEach((i, idx) => {
-      vol.update({
-        time: i.time, value: i[idc], color: i.close >= i.open ? S.red1 : S.green1
-      })
+      vol.update({time: i.time, value: i[idc], color: i.close >= i.open ? S.red1 : S.green1})
       vol1.update({time: i.time, value: ma5[idx]})
       vol2.update({time: i.time, value: ma10[idx]})
     })
@@ -133,28 +144,23 @@ const plotSub = () => {
   // 红绿柱形图
   else if (['main_net'].includes(idc)) {
     klineData.forEach(i => {
-      vol.update({
-        time: i.time, value: i[idc], color: i[idc] >= 0 ? S.red1 : S.green1
-      })
+      vol.update({time: i.time, value: i[idc], color: i[idc] >= 0 ? S.red1 : S.green1})
     })
   }
   // MACD
   else if (idc === 'macd') {
     let his = macd(close)
-
     klineData.forEach((i, idx) => {
-      vol.update({
-        time: i.time, value: his.histogram[idx], color: his.histogram[idx] > 0 ? S.red1 : S.green1
-      })
+      vol.update({time: i.time, value: his.histogram[idx], color: his.histogram[idx] > 0 ? S.red1 : S.green1})
       vol1.update({time: i.time, value: his.MACD[idx]})
       vol2.update({time: i.time, value: his.signal[idx]})
     })
   }
   // 面积图
-  else if (['ratio', 'lrye', 'winner_rate'].includes(idc)) {
+  else if (['ratio', 'rzrqye', 'winner_rate'].includes(idc)) {
     klineData.forEach(i => {
       if (i[idc]) area.update({
-        time: i.time, value: idc === 'lrye' ? i[idc] / 10 ** 8 : i[idc]
+        time: i.time, value: idc === 'rzrqye' ? i[idc] / 10 ** 8 : i[idc]
       })
     })
   }
@@ -171,6 +177,7 @@ const plot = () => {
     klineData = res.data.data
     plotMain()
     plotSub()
+    plotMarker()
   })
 }
 
@@ -179,11 +186,11 @@ const initChart = () => {
   // 副图距离顶部距离
   let bottom = 0.8
   // 主图距离底部距离
-  let top = 0.3
+  let top = 0.28
 
   myChart = createChart(document.getElementById('klineChart'), {
-    width: document.body.clientWidth,
-    height: 600,
+    width: document.body.clientWidth * 0.8,
+    height: 620,
     rightPriceScale: {
       scaleMargins: {
         top: 0.05,
@@ -209,11 +216,6 @@ const initChart = () => {
       },
     }
   })
-
-  // 提示框
-  toolTip = document.createElement('div')
-  document.getElementById('klineChart').appendChild(toolTip)
-  toolTip.className = 'kline-tooltip'
 
   let lineOptions = {
     lineWidth: 1,
@@ -287,17 +289,3 @@ const initChart = () => {
   })
 }
 </script>
-
-<style>
-.kline-tooltip {
-  top: -75px;
-  width: 95%;
-  height: 60px;
-  position: absolute;
-  font-size: 12px;
-  line-height: 1.5;
-  padding: 2%;
-  z-index: 8;
-  pointer-events: none;
-}
-</style>

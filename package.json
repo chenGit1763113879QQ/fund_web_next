@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@vicons/ionicons5": "^0.12.0",
     "axios": "^0.26.1",
     "bollinger-bands": "^3.0.2",
     "buffer": "^6.0.3",

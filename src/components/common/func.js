@@ -54,7 +54,6 @@ export let IdcDict = {
     'winner_rate': {label: '盈利筹码', extra: '%'},
 
     // 其他
-    'l_net': {label: '龙虎榜净流入'},
     'chips': {label: '筹码分布'},
 }
 
