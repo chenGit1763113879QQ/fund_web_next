@@ -157,10 +157,10 @@ const plotSub = () => {
     })
   }
   // 面积图
-  else if (['ratio', 'rzrqye', 'winner_rate'].includes(idc)) {
+  else if (['ratio', 'balance', 'winner_rate'].includes(idc)) {
     klineData.forEach(i => {
       if (i[idc]) area.update({
-        time: i.time, value: idc === 'rzrqye' ? i[idc] / 10 ** 8 : i[idc]
+        time: i.time, value: idc === 'balance' ? i[idc] / 10 ** 8 : i[idc]
       })
     })
   }

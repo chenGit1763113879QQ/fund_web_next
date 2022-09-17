@@ -52,27 +52,6 @@ export let IdcDict = {
     'winner_rate': {label: '盈利筹码', extra: '%'},
 }
 
-// 日期类型格式化
-Date.prototype.format = function (fmt) {
-    if (isNaN(this.getTime())) return null
-    let ret
-    const opt = {
-        "Y+": this.getFullYear().toString(),        // 年
-        "m+": (this.getMonth() + 1).toString(),     // 月
-        "d+": this.getDate().toString(),            // 日
-        "H+": this.getHours().toString(),           // 时
-        "M+": this.getMinutes().toString(),         // 分
-        "S+": this.getSeconds().toString()          // 秒
-    }
-    for (let k in opt) {
-        ret = new RegExp("(" + k + ")").exec(fmt)
-        if (ret) {
-            fmt = fmt.replace(ret[1], (ret[1].length === 1) ? (opt[k]) : (opt[k].padStart(ret[1].length, "0")))
-        }
-    }
-    return fmt
-}
-
 import * as fzstd from 'fzstd'
 import {Buffer} from 'buffer'
 
@@ -85,4 +64,17 @@ export let Decompress = function (str) {
     const r = JSON.parse(utf8Str)
     console.log(r)
     return r
+}
+
+// 初始化websocket
+export let NewWebSocket = function (url, query) {
+    if (query) {
+        // 拼接url
+        url += '?'
+        for (let key in query) {
+            if (query[key] !== null) url += key + '=' + query[key] + '&'
+        }
+        url = url.substring(0, url.lastIndexOf('&'))
+    }
+    return new WebSocket(window.$WS_URL + url)
 }
