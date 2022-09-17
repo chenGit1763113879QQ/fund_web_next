@@ -1,15 +1,11 @@
 import {createStore} from 'vuex'
 import {useRouter} from "vue-router"
 import axios from 'axios'
+import {Decompress} from "../components/common/func.js";
 // import {useMessage} from "naive-ui"
 
 export default createStore({
     state: {
-        items: {},
-        ticks: [],
-        pankou: {},
-        chart: [],
-
         red1: 'rgba(252,58,62,0.95)',
         green1: 'rgba(10,185,100,0.95)',
 
@@ -19,29 +15,11 @@ export default createStore({
         msgOpt: {duration: 1500},
     },
     getters: {
-        items(state) {
-            return state.items
-        },
-        routeName(state) {
-            return state.router.currentRoute.name
-        },
         is_login() {
             return localStorage.getItem('token')
         },
         code(state) {
             return state.router.currentRoute.params.code
-        },
-        type(state) {
-            return state.items.type
-        },
-        marketType(state) {
-            return state.items['marketType']
-        },
-        isCN(state) {
-            return state.items['marketType'] === 'CN'
-        },
-        isCNStock(state) {
-            return state.items['marketType'] === 'CN' && state.items.type === 'stock'
         }
     },
     mutations: {
@@ -60,6 +38,8 @@ export default createStore({
                     switch (res.status) {
                         case 200:
                             if (res.data.status) {
+                                // 解压
+                                res.data.data = Decompress(res.data.data)
                                 return Promise.resolve(res)
                             } else {
                                 // 警告消息

@@ -1,36 +1,78 @@
 <template>
-  <n-space>
-    <n-radio v-for="i in [
-        {code: code.MARKET_CN, label: '沪深'},
-        {code: code.MARKET_HK, label: '香港'},
-        {code: code.MARKET_US, label: '美股'}
-      ]"
-             :checked="checkedValue === i.code"
-             :value="i.code"
-             :label="i.label"
-             @change="handleChange"/>
-  </n-space>
+  <n-card size="small">
+    <n-tag @click="msg.info('点我干嘛', {duration: 1500})">
+      市场全景图
+      <template #avatar>
+        <img width="20" height="20" src="../../../public/favicon.ico">
+      </template>
+    </n-tag>
 
-  <div id="treeMap" style="height: 820px"/>
+    <n-space style="float: right">
+      <n-gradient-text type="danger">
+        面积选择
+      </n-gradient-text>
+      |
+      <n-radio
+          v-for="i in [['amount','成交额'], ['mc', '市值'], ['followers', '关注数']]"
+          :checked="areaValue === i[0]"
+          :value="i[0]" :label="i[1]"
+          @click="areaValue = i[0]"/>
+
+      &emsp;
+      <n-gradient-text type="info">
+        市场选择
+      </n-gradient-text>
+      |
+      <n-radio
+          v-for="i in [[code.MARKET_CN, '沪深'], [code.MARKET_HK, '港股'], [code.MARKET_US, '美股']]"
+          :checked="marketValue === i[0]"
+          :value="i[0]" :label="i[1]"
+          @change="marketValue = i[0]"/>
+
+      &emsp;
+      <n-popover trigger="hover">
+        <template #trigger>
+          <n-gradient-text type="info">
+            范围筛选
+          </n-gradient-text>
+        </template>
+        范围过大会造成图表卡顿
+      </n-popover>
+      |
+      <n-dropdown size="small"
+                  @select="handleSelect" :options="[
+                      {label: '>200亿', key: 200},
+                      {label: '>100亿', key: 100},
+                      {label: '>50亿', key: 50},
+                      {label: '全部', key: 0}]">
+        <n-tag size="small" :bordered="false">>{{ mcValue }}亿</n-tag>
+      </n-dropdown>
+    </n-space>
+  </n-card>
+  <div id="treeMap" style="height: 800px"/>
 </template>
 
 <script setup>
 import {onMounted, ref, watch} from "vue";
 import * as echarts from 'echarts';
 import {useRouter} from "vue-router";
+import {useMessage} from "naive-ui";
 import {useStore} from "vuex";
 import * as code from "../../components/common/code.js";
 
 let myChart
 const data = ref([])
-const checkedValue = ref(1)
+const areaValue = ref('amount')
+const marketValue = ref(1)
+const mcValue = ref(100)
+
+const handleSelect = (i) => {
+  mcValue.value = i
+}
 
 const router = useRouter()
 const store = useStore()
-
-const handleChange = (e) => {
-  checkedValue.value = Number(e.target.value)
-}
+const msg = useMessage()
 
 onMounted(() => {
   initChart()
@@ -40,14 +82,14 @@ onMounted(() => {
   }, 3000)
 })
 
-watch(data, () => plot())
-watch(checkedValue, () => getData())
+watch([data, areaValue, mcValue], () => plot())
+watch(marketValue, () => getData())
 
 const getData = () => {
   store.state.axios({
     url: '/api/market/bkpro',
     params: {
-      market: checkedValue.value,
+      market: marketValue.value,
     }
   }).then(res => {
     data.value = res.data.data
@@ -76,10 +118,10 @@ const plot = () => {
   data.value.forEach(i => {
     let children = []
     i['children'].forEach((j) => {
-      if (j.mc > 100 * 10 ** 8) children.push({
+      if (j.mc > mcValue.value * 10 ** 8 && j.amount > 0) children.push({
         code: j._id,
         name: j.name,
-        value: j.amount,
+        value: j[areaValue.value],
         pct_chg: j.pct_chg,
         itemStyle: {
           color: getColor(j['pct_chg']),
@@ -91,7 +133,7 @@ const plot = () => {
       code: i['_id'],
       name: i.name,
       pct_chg: i['pct_chg'],
-      value: i['amount'],
+      value: i[areaValue.value],
       children: children,
       itemStyle: {
         color: getColor(i['pct_chg']),
@@ -120,7 +162,7 @@ const initChart = () => {
         animationDurationUpdate: 500,
         name: '板块',
         type: 'treemap',
-        left: 10, right: 10, top: 25, bottom: 0,
+        left: 15, right: 15, top: 0, bottom: 5,
         label: {
           color: 'black',
         },

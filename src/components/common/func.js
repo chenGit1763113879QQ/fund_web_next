@@ -24,17 +24,15 @@ export let IdcDict = {
     'price': {label: '价格', color: 'pct_chg', format: false},
     'pct_chg': {label: '涨跌幅', color: 'pct_chg', extra: '%', format: false, showPlus: true},
     'main_net': {label: '大单净额', color: 'main_net'},
-    'net': {label: '净流入', color: 'net'},
     'mc': {label: '总市值', unit: '亿'},
     'fmc': {label: '流通市值'},
     'vol': {label: '成交量'},
     'amount': {label: '成交额', unit: '亿'},
     'tr': {label: '换手率', extra: '%'},
     'amp': {label: '振幅', extra: '%'},
-    'pct_rate': {label: '涨速', color: 'pct_rate', extra: '%', showPlus: true},
     'pct_year': {label: '今年涨幅', color: 'pct_year', extra: '%', showPlus: true},
     'ratio': {label: '港资持股', extra: '%'},
-    'lrye': {label: '两融余额', unit: '亿'},
+    'balance': {label: '两融余额', unit: '亿'},
 
     // 估值指标
     'pe_ttm': {label: '市盈率'},
@@ -52,9 +50,6 @@ export let IdcDict = {
     'macd': {label: 'MACD'},
     'MACD': {label: 'MACD'},
     'winner_rate': {label: '盈利筹码', extra: '%'},
-
-    // 其他
-    'chips': {label: '筹码分布'},
 }
 
 // 日期类型格式化
@@ -76,4 +71,18 @@ Date.prototype.format = function (fmt) {
         }
     }
     return fmt
+}
+
+import * as fzstd from 'fzstd'
+import {Buffer} from 'buffer'
+
+export let Decompress = function (str) {
+    const buffer = new Buffer(str, 'base64')
+    const d = fzstd.decompress(buffer)
+
+    // utf8解码
+    const utf8Str = new TextDecoder().decode(d)
+    const r = JSON.parse(utf8Str)
+    console.log(r)
+    return r
 }
