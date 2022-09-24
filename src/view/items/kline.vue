@@ -1,42 +1,76 @@
 <template>
-  <n-card>
-    <template #header>
-      <kline-menu/>
-    </template>
-    <div id="klineChart"/>
+  <n-card size="small">
+    <n-space size="large" style="float: left">
+      <n-tag>
+        K线图表
+        <template #avatar>
+          <img alt="icon" width="20" height="20" src="/favicon.ico">
+        </template>
+      </n-tag>
+    </n-space>
+
+    <n-space size="large" style="float: right; margin-top: 4px">
+      <n-gradient-text type="info">
+        周期
+      </n-gradient-text>
+      <span>
+        <n-radio
+            v-for="i in [['d','日'], ['w', '周'], ['m', '月'], ['y', '年']]"
+            :checked="periodValue === i[0]"
+            :value="i[0]" :label="i[1]"
+            @click="periodValue = i[0]"/>
+      </span>
+      &emsp;
+      <n-gradient-text type="error">
+        主图
+      </n-gradient-text>
+      <span>
+        <n-radio
+            v-for="i in [['avg','均线'], ['area', '面积'], ['boll', 'BOLL'], ['avgKline', '平均K线']]"
+            :checked="periodValue === i[0]"
+            :value="i[0]" :label="i[1]"
+            @click="periodValue = i[0]"/>
+      </span>
+      &emsp;
+      <n-gradient-text type="error">
+        副图
+      </n-gradient-text>
+      <span>
+        <n-radio
+            v-for="i in [['vol','成交量'], ['amount', '成交额'], ['chip', '盈利筹码'], ['ratio', '港资持股']]"
+            :checked="periodValue === i[0]"
+            :value="i[0]" :label="i[1]"
+            @click="periodValue = i[0]"/>
+      </span>
+    </n-space>
   </n-card>
+
+  <div id="klineChart" style="margin-left: 5%"/>
 </template>
 
 <script setup>
 import {createChart} from "lightweight-charts";
-import boll from 'bollinger-bands';
 import {ma} from 'moving-averages';
-import macd from 'macd';
-import {computed, onMounted, ref} from "vue";
+import {onMounted, ref, watch} from "vue";
 import {useStore} from "vuex";
-import KlineMenu from "./klineMenu.vue";
+import {useMessage} from "naive-ui";
 
 const store = useStore()
+const msg = useMessage()
 const G = store.getters
 const S = store.state
 
-const period = ref('d')
+const periodValue = ref('d')
+
+watch(periodValue, () => plot())
 
 // 主图指标
-let main = 0
-let mainOpt = ['avg', 'boll', 'avgKline', null]
+let plotIndex = 0
+let plotList = ['avg', 'boll', 'avgKline']
 
 // 副图指标
-let indicate = 0
-const indicateOpt = computed(() => {
-  let marketType = G.marketType
-  let type = G.type
-
-  if (marketType !== 'CN') return ['vol', 'amount', 'macd']
-  else if (type === 'stock') return ['vol', 'amount', 'main_net', 'macd', 'winner_rate', 'ratio', 'lrye']
-  else if (['I1', 'I2', 'C'].includes(type)) return ['vol', 'main_net', 'macd', 'winner_rate', 'ratio']
-  else return ['vol', 'amount', 'macd']
-})
+let subplotIndex = 0
+let subplotList = ['vol', 'main_net', 'macd', 'winner_rate', 'ratio', 'balance']
 
 let kline, myChart
 let ma5, ma10, ma20, vol, vol1, vol2, area, klineData
@@ -56,7 +90,7 @@ const plotMarker = () => {
   }).then(res => {
     let logs = res.data.data['logs']
     kline.setMarkers(logs.map(i => {
-      if (i.type===0) return {time: i.time, position: 'belowBar', color: '#e91e63', shape: 'arrowUp', text: '买'}
+      if (i.type === 0) return {time: i.time, position: 'belowBar', color: '#e91e63', shape: 'arrowUp', text: '买'}
       else return {time: i.time, position: 'aboveBar', color: '#2196F3', shape: 'arrowDown', text: '卖'}
     }))
   })
@@ -71,19 +105,16 @@ const plotMain = () => {
   let arr = [], arr2, arr3, avgKline
   let close = klineData.map(i => i.close)
 
-  switch (mainOpt[main]) {
+  switch (plotList[plotIndex]) {
     case 'boll':
-      if (close.length < 20) return
-
-      arr = boll(close, 20, 2)
-      ma5.setData(klineData.map((i, index) => {
-        return {time: i.time, value: arr.upper[index]}
+      ma5.setData(klineData.map(i => {
+        return {time: i.time, value: i['boll_up']}
       }))
-      ma10.setData(klineData.map((i, index) => {
-        return {time: i.time, value: arr.lower[index]}
+      ma10.setData(klineData.map(i => {
+        return {time: i.time, value: i['boll_low']}
       }))
-      ma20.setData(klineData.map((i, index) => {
-        return {time: i.time, value: arr.mid[index]}
+      ma20.setData(klineData.map(i => {
+        return {time: i.time, value: i['ma20']}
       }))
       break
 
@@ -103,7 +134,7 @@ const plotMain = () => {
       }))
   }
 
-  switch (mainOpt[main]) {
+  switch (plotList[plotIndex]) {
     case 'avgKline':
       avgKline = JSON.parse(JSON.stringify(klineData))
       for (let i = 1; i < avgKline.length; i++) {
@@ -127,8 +158,7 @@ const plotSub = () => {
   vol2.setData([])
   area.setData([])
 
-  let idc = indicateOpt.value[indicate]
-  let close = klineData.map(i => i.close)
+  let idc = subplotList[subplotIndex]
 
   if (idc === 'vol' || idc === 'amount') {
     let bar = klineData.map(i => i[idc])
@@ -149,11 +179,10 @@ const plotSub = () => {
   }
   // MACD
   else if (idc === 'macd') {
-    let his = macd(close)
-    klineData.forEach((i, idx) => {
-      vol.update({time: i.time, value: his.histogram[idx], color: his.histogram[idx] > 0 ? S.red1 : S.green1})
-      vol1.update({time: i.time, value: his.MACD[idx]})
-      vol2.update({time: i.time, value: his.signal[idx]})
+    klineData.forEach(i => {
+      vol.update({time: i.time, value: i.macd, color: i.macd > 0 ? S.red1 : S.green1})
+      vol1.update({time: i.time, value: i['macd_dea']})
+      vol2.update({time: i.time, value: i['macd_dif']})
     })
   }
   // 面积图
@@ -171,20 +200,29 @@ const plot = () => {
     url: '/api/stock/chart/kline',
     params: {
       code: G.code,
-      period: period.value,
+      period: periodValue.value,
     }
   }).then(res => {
     klineData = res.data.data
+    if (!klineData) {
+      msg.error('获取K线数据失败', G.msgOpt)
+      return
+    }
     plotMain()
     plotSub()
     plotMarker()
+
+    myChart.timeScale().setVisibleLogicalRange({
+      from: klineData.length - 200,
+      to: klineData.length + 5
+    })
   })
 }
 
 // 初始化
 const initChart = () => {
   // 副图距离顶部距离
-  let bottom = 0.8
+  let bottom = 0.76
   // 主图距离底部距离
   let top = 0.28
 

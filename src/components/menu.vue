@@ -1,60 +1,71 @@
 <template>
   <n-space vertical>
-    <n-space> <n-switch v-model:value="inverted" /> inverted </n-space>
-    <n-layout>
-      <n-layout-header :inverted="inverted" bordered>
-        Header Header Header
-        <n-menu mode="horizontal" :inverted="inverted" :options="menuOptions" />
-      </n-layout-header>
-      <n-layout has-sider>
-        <n-layout-sider
-            bordered
-            show-trigger
-            collapse-mode="width"
+    <n-switch v-model:value="collapsed"/>
+    <n-layout has-sider>
+      <n-layout-sider
+          bordered
+          collapse-mode="width"
+          :collapsed-width="64"
+          :width="240"
+          :collapsed="collapsed"
+          show-trigger
+          @collapse="collapsed = true"
+          @expand="collapsed = false"
+      >
+        <n-menu
+            :collapsed="collapsed"
             :collapsed-width="64"
-            :width="240"
-            :native-scrollbar="false"
-            :inverted="inverted"
-            style="max-height: 320px">
-          <n-menu
-              :inverted="inverted"
-              :collapsed-width="64"
-              :collapsed-icon-size="22"
-              :options="menuOptions"
-          />
-        </n-layout-sider>
-        <n-layout style="max-height: 320px" />
+            :collapsed-icon-size="22"
+            :options="menuOptions"
+            :render-label="renderMenuLabel"
+            :render-icon="renderMenuIcon"
+            :expand-icon="expandIcon"
+        />
+      </n-layout-sider>
+      <n-layout>
+        <span>内容</span>
       </n-layout>
-      <n-layout-footer :inverted="inverted" bordered>
-        Footer Footer Footer
-      </n-layout-footer>
     </n-layout>
   </n-space>
 </template>
 
-<script>
-import { h, defineComponent, ref } from "vue";
-import { NIcon } from "naive-ui";
-import {
-  BookOutline as BookIcon,
-  PersonOutline as PersonIcon,
-  WineOutline as WineIcon
-} from "@vicons/ionicons5";
+<script setup>
+import {h, ref} from "vue";
+import {NIcon} from "naive-ui";
+import {BookmarkOutline, CaretDownOutline} from "@vicons/ionicons5";
 
-function renderIcon(icon) {
-  return () => h(NIcon, null, { default: () => h(icon) });
+const collapsed = ref(true)
+
+const renderMenuLabel = (option) => {
+  if ("href" in option) {
+    return h(
+        "a",
+        {href: option.href, target: "_blank"},
+        option.label
+    );
+  }
+  return option.label;
+}
+const renderMenuIcon = (option) => {
+  if (option.key === "sheep-man")
+    return true;
+  if (option.key === "food")
+    return null;
+  return h(NIcon, null, {default: () => h(BookmarkOutline)});
+}
+const expandIcon = () => {
+  return h(NIcon, null, {default: () => h(CaretDownOutline)});
 }
 
 const menuOptions = [
   {
     label: "且听风吟",
     key: "hear-the-wind-sing",
-    icon: renderIcon(BookIcon)
+    href: "https://baike.baidu.com/item/%E4%B8%94%E5%90%AC%E9%A3%8E%E5%90%9F/3199"
   },
   {
     label: "1973年的弹珠玩具",
     key: "pinball-1973",
-    icon: renderIcon(BookIcon),
     disabled: true,
     children: [
       {
@@ -66,13 +77,11 @@ const menuOptions = [
   {
     label: "寻羊冒险记",
     key: "a-wild-sheep-chase",
-    disabled: true,
-    icon: renderIcon(BookIcon)
+    disabled: true
   },
   {
     label: "舞，舞，舞",
     key: "dance-dance-dance",
-    icon: renderIcon(BookIcon),
     children: [
       {
         type: "group",
@@ -81,24 +90,22 @@ const menuOptions = [
         children: [
           {
             label: "叙事者",
-            key: "narrator",
-            icon: renderIcon(PersonIcon)
+            key: "narrator"
           },
           {
             label: "羊男",
-            key: "sheep-man",
-            icon: renderIcon(PersonIcon)
+            key: "sheep-man"
           }
         ]
       },
       {
         label: "饮品",
         key: "beverage",
-        icon: renderIcon(WineIcon),
         children: [
           {
             label: "威士忌",
-            key: "whisky"
+            key: "whisky",
+            href: "https://baike.baidu.com/item/%E5%A8%81%E5%A3%AB%E5%BF%8C%E9%85%92/2959816?fromtitle=%E5%A8%81%E5%A3%AB%E5%BF%8C&fromid=573&fr=aladdin"
           }
         ]
       },
@@ -118,14 +125,5 @@ const menuOptions = [
       }
     ]
   }
-];
-
-export default defineComponent({
-  setup() {
-    return {
-      inverted: ref(false),
-      menuOptions
-    };
-  }
-});
+]
 </script>

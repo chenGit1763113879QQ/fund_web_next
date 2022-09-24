@@ -2,7 +2,6 @@ import {createStore} from 'vuex'
 import {useRouter} from "vue-router"
 import axios from 'axios'
 import {Decompress} from "../components/common/func.js";
-// import {useMessage} from "naive-ui"
 
 export default createStore({
     state: {
@@ -26,7 +25,6 @@ export default createStore({
         // 初始化
         init(state) {
             state.router = useRouter()
-            // state.msg = useMessage()
 
             // 初始化token
             let token = localStorage.getItem('token')
@@ -39,16 +37,13 @@ export default createStore({
                         case 200:
                             if (res.data.status) {
                                 // 解压
-                                res.data.data = Decompress(res.data.data)
+                                if (res.data.data) res.data.data = Decompress(res.data.data)
                                 return Promise.resolve(res)
                             } else {
-                                // 警告消息
-                                // state.msg.warning(res.data.msg, state.msgOpt)
                                 return Promise.reject(res)
                             }
 
                         case 401:
-                            // state.msg.warning(res.data.msg, state.msgOpt)
                             localStorage.removeItem('token')
                             return Promise.reject(res)
 
@@ -58,7 +53,6 @@ export default createStore({
                 },
                 err => {
                     console.error(err)
-                    // state.msg.error('服务器内部错误', state.msgOpt)
                 },
             )
             state.axios = axios

@@ -23,9 +23,9 @@
     "vuex": "^4.0.2"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^3.0.3",
+    "@vitejs/plugin-vue": "^3.1.0",
     "moving-averages": "^4.0.6",
     "naive-ui": "^2.33.3",
-    "vite": "^3.0.9"
+    "vite": "^3.1.3"
   }
 }

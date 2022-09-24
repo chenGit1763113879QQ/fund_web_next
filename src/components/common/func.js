@@ -2,8 +2,6 @@
 export let formatNumber = (value) => {
     let result = Math.abs(value)
     if (result > 10 ** 12) result = (value / 10 ** 12).toFixed(2) + '万亿'
-    // 千亿
-    else if (result > 10 ** 11) result = (value / 10 ** 8).toFixed(0) + '亿'
     // 百亿
     else if (result > 10 ** 10) result = (value / 10 ** 8).toFixed(1) + '亿'
     // 亿

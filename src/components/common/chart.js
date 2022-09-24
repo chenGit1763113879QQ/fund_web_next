@@ -7,17 +7,7 @@ export let chartOptions = {
     },
     // 禁止所有交互
     handleScale: {
-        mouseWheel: false,
         axisPressedMouseMove: false,
-    },
-    layout: {
-        fontFamily: 'DIN',
-    },
-    handleScroll: {
-        mouseWheel: false,
-        horzTouchDrag: false,
-        vertTouchDrag: false,
-        pressedMouseMove: false,
     },
     // 时间轴
     timeScale: {
@@ -41,10 +31,4 @@ export let chartOptions = {
 export let lineOptions = {
     lineWidth: 1.2,
     priceLineVisible: false,
-}
-
-export let priceLine = {
-    color: 'rgb(230,230,230)',
-    price: 0,
-    lineWidth: 1.2,
 }

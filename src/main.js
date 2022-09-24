@@ -7,6 +7,8 @@ import NaiveUi from 'naive-ui'
 
 const app = createApp(App)
 
+import './style.css'
+
 // websocket地址
 // window.$WS_URL = 'ws://lucario.ltd/ws'
 window.$WS_URL = 'ws://127.0.0.1:10888/ws'

@@ -1,10 +1,10 @@
 import {createRouter, createWebHashHistory} from 'vue-router'
-import market from '../view/market/index.vue'
-import items from  '../view/items/index.vue'
+import items from '../view/items/index.vue'
+import map from '../view/market/panorama/map.vue'
 
 const routes = [
-    {path: '/', redirect: '/market'},
-    {path: '/market', name: 'market', component: market},
+    {path: '/', redirect: '/market/map'},
+    {path: '/market/map', name: 'map', component: map},
     {path: '/items/:code', name: 'items', component: items},
 ]
 
