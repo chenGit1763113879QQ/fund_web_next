@@ -178,8 +178,8 @@ const plot = () => {
         code: j._id,
         name: j.name,
         mc: j.mc,
-        amount: j['amount'],
         value: j[areaValue.value],
+        amount: j.amount,
         pct_chg: j.pct_chg,
         price: j.price,
         itemStyle: {
@@ -233,7 +233,7 @@ const plotSimpleChart = (data) => {
   elem.innerHTML = `${data.name}&ensp;<span style="color: darkgray; font-size: 0.5rem">${id ? id : ''}</span><br>
     <span style="color:${color}">${data.price ? data.price.toFixed(2) : '-- --'}</span>&nbsp;
     <span style="color:${color}">${pct > 0 ? '+' : ''}${pct !== undefined ? pct.toFixed(2) : '-- --'}%</span>
-    <div style="color: darkgray; font-size: 0.5rem">${formatNumber(data[areaValue.value])}</div>
+    <div style="color: darkgray; font-size: 0.5rem">${formatNumber(data.value)}</div>
     <div style="height: 5px"/>`
 
   // 图表实例

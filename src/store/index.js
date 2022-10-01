@@ -5,12 +5,8 @@ import {Decompress} from "../components/common/func.js";
 
 export default createStore({
     state: {
-        red1: 'rgba(252,58,62,0.95)',
-        green1: 'rgba(10,185,100,0.95)',
-
         axios: null,
         router: null,
-        msg: null,
         msgOpt: {duration: 1500},
     },
     getters: {

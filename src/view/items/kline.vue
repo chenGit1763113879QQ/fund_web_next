@@ -26,10 +26,10 @@
       </n-gradient-text>
       <span>
         <n-radio
-            v-for="i in [['avg','均线'], ['area', '面积'], ['boll', 'BOLL'], ['avgKline', '平均K线']]"
-            :checked="periodValue === i[0]"
+            v-for="i in [['avg','均线'], ['boll', 'BOLL'], ['avgKline', '平均K线']]"
+            :checked="plotValue === i[0]"
             :value="i[0]" :label="i[1]"
-            @click="periodValue = i[0]"/>
+            @click="plotValue = i[0]"/>
       </span>
       &emsp;
       <n-gradient-text type="error">
@@ -37,10 +37,10 @@
       </n-gradient-text>
       <span>
         <n-radio
-            v-for="i in [['vol','成交量'], ['amount', '成交额'], ['chip', '盈利筹码'], ['ratio', '港资持股']]"
-            :checked="periodValue === i[0]"
+            v-for="i in [['vol','成交量'], ['amount', '成交额'], ['main_net', '大单净额'], ['macd', 'MACD'], ['winner_rate', '盈利筹码'], ['ratio', '港资持股']]"
+            :checked="subplotValue === i[0]"
             :value="i[0]" :label="i[1]"
-            @click="periodValue = i[0]"/>
+            @click="subplotValue = i[0]"/>
       </span>
     </n-space>
   </n-card>
@@ -49,6 +49,7 @@
 </template>
 
 <script setup>
+import boll from 'bollinger-bands';
 import {createChart} from "lightweight-charts";
 import {ma} from 'moving-averages';
 import {onMounted, ref, watch} from "vue";
@@ -61,16 +62,12 @@ const G = store.getters
 const S = store.state
 
 const periodValue = ref('d')
+const plotValue = ref('avg')
+const subplotValue = ref('vol')
 
 watch(periodValue, () => plot())
-
-// 主图指标
-let plotIndex = 0
-let plotList = ['avg', 'boll', 'avgKline']
-
-// 副图指标
-let subplotIndex = 0
-let subplotList = ['vol', 'main_net', 'macd', 'winner_rate', 'ratio', 'balance']
+watch(plotValue, () => plotMain())
+watch(subplotValue, () => plotSub())
 
 let kline, myChart
 let ma5, ma10, ma20, vol, vol1, vol2, area, klineData
@@ -81,6 +78,11 @@ onMounted(() => {
 })
 
 const plotMarker = () => {
+  if (periodValue.value !== 'd') {
+    kline.setMarkers([])
+    return
+  }
+
   S.axios({
     url: '/api/back/logs',
     params: {
@@ -89,6 +91,8 @@ const plotMarker = () => {
     }
   }).then(res => {
     let logs = res.data.data['logs']
+    logs = logs.filter(i => new Date(i.time) >= new Date('2020/01/01'))
+
     kline.setMarkers(logs.map(i => {
       if (i.type === 0) return {time: i.time, position: 'belowBar', color: '#e91e63', shape: 'arrowUp', text: '买'}
       else return {time: i.time, position: 'aboveBar', color: '#2196F3', shape: 'arrowDown', text: '卖'}
@@ -105,16 +109,19 @@ const plotMain = () => {
   let arr = [], arr2, arr3, avgKline
   let close = klineData.map(i => i.close)
 
-  switch (plotList[plotIndex]) {
+  switch (plotValue.value) {
     case 'boll':
-      ma5.setData(klineData.map(i => {
-        return {time: i.time, value: i['boll_up']}
+      if (close.length < 20) return
+
+      arr = boll(close, 20, 2)
+      ma5.setData(klineData.map((i, index) => {
+        return {time: i.time, value: arr.upper[index]}
       }))
-      ma10.setData(klineData.map(i => {
-        return {time: i.time, value: i['boll_low']}
+      ma10.setData(klineData.map((i, index) => {
+        return {time: i.time, value: arr.lower[index]}
       }))
-      ma20.setData(klineData.map(i => {
-        return {time: i.time, value: i['ma20']}
+      ma20.setData(klineData.map((i, index) => {
+        return {time: i.time, value: arr.mid[index]}
       }))
       break
 
@@ -134,7 +141,7 @@ const plotMain = () => {
       }))
   }
 
-  switch (plotList[plotIndex]) {
+  switch (plotValue.value) {
     case 'avgKline':
       avgKline = JSON.parse(JSON.stringify(klineData))
       for (let i = 1; i < avgKline.length; i++) {
@@ -158,7 +165,7 @@ const plotSub = () => {
   vol2.setData([])
   area.setData([])
 
-  let idc = subplotList[subplotIndex]
+  let idc = subplotValue.value
 
   if (idc === 'vol' || idc === 'amount') {
     let bar = klineData.map(i => i[idc])
@@ -166,21 +173,21 @@ const plotSub = () => {
     let ma10 = ma(bar, 10)
 
     klineData.forEach((i, idx) => {
-      vol.update({time: i.time, value: i[idc], color: i.close >= i.open ? S.red1 : S.green1})
+      vol.update({time: i.time, value: i[idc], color: i.close >= i.open ? window.$lRed : window.$lGreen})
       vol1.update({time: i.time, value: ma5[idx]})
       vol2.update({time: i.time, value: ma10[idx]})
     })
   }
   // 红绿柱形图
-  else if (['main_net'].includes(idc)) {
+  else if (idc === 'main_net' || idc === 'net') {
     klineData.forEach(i => {
-      vol.update({time: i.time, value: i[idc], color: i[idc] >= 0 ? S.red1 : S.green1})
+      vol.update({time: i.time, value: i[idc], color: i[idc] >= 0 ? window.$lRed : window.$lGreen})
     })
   }
   // MACD
   else if (idc === 'macd') {
     klineData.forEach(i => {
-      vol.update({time: i.time, value: i.macd, color: i.macd > 0 ? S.red1 : S.green1})
+      vol.update({time: i.time, value: i.macd, color: i.macd > 0 ? window.$lRed : window.$lGreen})
       vol1.update({time: i.time, value: i['macd_dea']})
       vol2.update({time: i.time, value: i['macd_dif']})
     })
@@ -263,12 +270,12 @@ const initChart = () => {
 
   // k线
   kline = myChart.addCandlestickSeries({
-    upColor: S.red1,
-    downColor: S.green1,
-    borderUpColor: S.red1,
-    borderDownColor: S.green1,
-    wickUpColor: S.red1,
-    wickDownColor: S.green1,
+    upColor: window.$red,
+    downColor: window.$green,
+    borderUpColor: window.$red,
+    borderDownColor: window.$green,
+    wickUpColor: window.$red,
+    wickDownColor: window.$green,
   })
 
   // 成交量
@@ -323,7 +330,6 @@ const initChart = () => {
     lineColor: window.$primary,
     topColor: 'rgba(0,120,255,0.05)',
     bottomColor: 'rgba(0,120,255,0.05)',
-    priceLineVisible: false,
   })
 }
 </script>
