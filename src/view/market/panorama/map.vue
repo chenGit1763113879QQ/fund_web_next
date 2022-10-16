@@ -2,49 +2,47 @@
   <n-card size="small">
     <n-space size="large" style="float: left">
       <n-tag>
-        市场板块全景图
+        市场全景图
         <template #avatar>
           <img alt="icon" width="20" height="20" src="/favicon.ico">
         </template>
       </n-tag>
+    </n-space>
 
-      <div style="margin-top: 4px">
-        <n-time v-if="market.TradeTime" :time="market.TradeTime"/>
+    <n-space style="float: left; margin-left: 25%">
+      <div style="width: 300px">
+        <n-auto-complete
+        v-model:value="searchInput"
+        :options="searchItems"
+        :render-label="renderLabel"
+        :on-select="onSelect"
+        placeholder="搜索股票"
+      />
       </div>
     </n-space>
 
     <n-space size="large" style="float: right; margin-top: 4px">
-      <n-popover trigger="hover">
-        <template #trigger>
-          <n-gradient-text type="error">
-            指标选择
-          </n-gradient-text>
-        </template>
-        代表树图的面积大小
-      </n-popover>
-      <span>
+      <n-gradient-text type="error">
+        指标选择
+        &ensp;
         <n-radio
             v-for="i in [['amount','成交额'], ['mc', '市值'], ['followers', '关注数']]"
             :checked="areaValue === i[0]"
             :value="i[0]" :label="i[1]"
             @click="areaValue = i[0]"/>
-      </span>
+      </n-gradient-text>
+
       &emsp;
-      <n-popover trigger="hover">
-        <template #trigger>
-          <n-gradient-text type="info">
-            市场选择
-          </n-gradient-text>
-        </template>
-        仅展示具有代表性的板块及股票
-      </n-popover>
-      <span>
+      <n-gradient-text type="info">
+        市场选择
+        &ensp;
         <n-radio
             v-for="i in [[code.MARKET_CN, '沪深'], [code.MARKET_HK, '港股'], [code.MARKET_US, '美股']]"
             :checked="marketValue === i[0]"
             :value="i[0]" :label="i[1]"
             @change="marketValue = i[0]"/>
-      </span>
+      </n-gradient-text>
+
       &ensp;
       <n-icon size="18" @click="active=true" style="margin-top: 2px">
         <SettingsOutline/>
@@ -52,7 +50,7 @@
     </n-space>
   </n-card>
 
-  <div id="treeMap"/>
+  <div id="treeMap"></div>
 
   <n-drawer v-model:show="active" default-width="380" placement="right" resizable>
     <n-drawer-content title="设置">
@@ -62,7 +60,7 @@
 </template>
 
 <script setup>
-import {onMounted, ref, watch} from "vue";
+import {onMounted, ref, watch, h} from "vue";
 import * as echarts from 'echarts';
 import {useRouter} from "vue-router";
 import {useStore} from "vuex";
@@ -72,6 +70,7 @@ import * as chartOpt from "../../../components/common/chart.js";
 import {formatNumber, NewWebSocket} from "../../../components/common/func.js";
 import {SettingsOutline} from '@vicons/ionicons5';
 import Settings from "./settings.vue";
+import {NTag} from "naive-ui"
 
 let chart, lineChart, lineSeries, zeroLine, uniqueCode, ws
 
@@ -82,12 +81,15 @@ const areaValue = ref('amount')
 const marketValue = ref(1)
 const active = ref(false)
 
+const searchInput = ref('')
+const searchItems = ref([])
+
 let tradeTimer
-const market = ref({
+let market = {
   TradeTime: null,
   Status: false,
   StatusName: '',
-})
+}
 
 const router = useRouter()
 const store = useStore()
@@ -97,15 +99,16 @@ onMounted(() => {
   initWebsocket()
   getData()
   setInterval(() => {
-    if (market.value.Status) getData()
+    if (market.Status) getData()
   }, 3000)
 })
 
+watch(data, () => plot())
+watch(searchInput, () => search())
 watch([marketValue, areaValue], () => {
   ws.send(JSON.stringify({market: marketValue.value}))
   getData()
 })
-watch(data, () => plot())
 
 const getData = () => {
   store.state.axios({
@@ -121,19 +124,23 @@ const getData = () => {
 
 // 获取板块涨幅背景颜色
 const getColor = (pct) => {
-  if (pct >= 8) return 'rgba(250,65,65,0.7)'
-  if (pct >= 6) return 'rgba(250,65,65,0.6)'
-  if (pct >= 4) return 'rgba(250,65,65,0.5)'
-  if (pct >= 2) return 'rgba(250,65,65,0.4)'
+  if (pct >= 8) return 'rgba(250,65,65,0.5)'
+  if (pct >= 6) return 'rgba(250,65,65,0.45)'
+  if (pct >= 4) return 'rgba(250,65,65,0.4)'
+  if (pct >= 2) return 'rgba(250,65,65,0.35)'
   if (pct > 0) return 'rgba(250,65,65,0.3)'
 
   if (pct === 0) return 'rgb(210,210,210)'
 
-  if (pct <= -8) return 'rgba(0,185,100,0.8)'
-  if (pct <= -6) return 'rgba(0,185,100,0.7)'
-  if (pct <= -4) return 'rgba(0,185,100,0.6)'
-  if (pct <= -2) return 'rgba(0,185,100,0.5)'
+  if (pct <= -8) return 'rgba(0,185,100,0.6)'
+  if (pct <= -6) return 'rgba(0,185,100,0.55)'
+  if (pct <= -4) return 'rgba(0,185,100,0.5)'
+  if (pct <= -2) return 'rgba(0,185,100,0.45)'
   if (pct < 0) return 'rgba(0,185,100,0.4)'
+}
+
+const onSelect = (i) => {
+  router.push({name: 'items', params: {code: i}})
 }
 
 // 行业涨幅背景颜色
@@ -141,6 +148,32 @@ const getBKColor = (pct) => {
   if (pct > 0) return 'rgba(235,65,65,0.8)'
   if (pct === 0) return 'rgb(210,210,210)'
   if (pct < 0) return 'rgb(38,168,138)'
+}
+
+const renderLabel = (option) => {
+  let item = option.item
+  return [
+        item.name,
+        " ",
+        h('span', {style: {color: 'darkgray', fontSize: '0.5rem'}}, {default: () => item._id.split('.')[0]}),
+        " ",
+        h('span', {style: {color: item.pct_chg > 0 ? 'red' : 'green'}}, {default: () => (item.pct_chg > 0 ? '+' : '') + item.pct_chg.toFixed(2) + '%'})
+  ]
+}
+
+const search = () => {
+  if (searchInput.value === '') return
+
+  store.state.axios({
+    url: '/api/stock/search',
+    params: {input: searchInput.value}
+  }).then(res => {
+    let data = res.data.data
+    if (data) searchItems.value = data.map(i => {
+      return {item: i, value: i._id}
+    })
+    else searchItems.value = []
+  })
 }
 
 const initWebsocket = () => {
@@ -156,12 +189,12 @@ const initWebsocket = () => {
         break
 
       case 'status':
-        market.value = res.data
-        if (market.value.Status) tradeTimer = setInterval(() => {
-          market.value.TradeTime = new Date()
+        market = res.data
+        if (market.Status) tradeTimer = setInterval(() => {
+          market.TradeTime = new Date()
         }, 100)
         else {
-          market.value.TradeTime = new Date(market.value.TradeTime)
+          market.TradeTime = new Date(market.TradeTime)
           clearInterval(tradeTimer)
         }
     }
@@ -192,7 +225,7 @@ const plot = () => {
     children = children.filter(i => i.amount > 0)
     children = children.sort((i, j) => {
       return j.mc - i.mc
-    }).slice(0, 8)
+    }).slice(0, 7)
 
     series.push({
       code: i['_id'],

@@ -77,7 +77,9 @@ onMounted(() => {
   plot()
 })
 
+// 绘制标签
 const plotMarker = () => {
+  return
   if (periodValue.value !== 'd') {
     kline.setMarkers([])
     return
@@ -251,6 +253,9 @@ const initChart = () => {
     timeScale: {
       fixLeftEdge: true,
       borderVisible: false,
+      tickMarkFormatter: t => {
+        return t.year + '-' + t.month
+      }
     },
     grid: {
       horzLines: {

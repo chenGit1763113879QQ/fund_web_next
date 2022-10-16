@@ -11,7 +11,7 @@ import './style.css'
 
 // websocket地址
 // window.$WS_URL = 'ws://lucario.ltd/ws'
-window.$WS_URL = 'ws://127.0.0.1:10888/ws'
+window.$WS_URL = 'ws://192.168.0.102:10888/ws'
 
 // 颜色
 window.$red = 'rgb(250,68,68)'

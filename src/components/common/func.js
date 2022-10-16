@@ -53,8 +53,8 @@ export let IdcDict = {
 import * as fzstd from 'fzstd'
 import {Buffer} from 'buffer'
 
-export let Decompress = function (str) {
-    const buffer = new Buffer(str, 'base64')
+export let Decompress = (str) => {
+    const buffer = Buffer.from(str, 'base64')
     const d = fzstd.decompress(buffer)
 
     // utf8解码
@@ -65,7 +65,7 @@ export let Decompress = function (str) {
 }
 
 // 初始化websocket
-export let NewWebSocket = function (url, query) {
+export let NewWebSocket = (url, query) => {
     if (query) {
         // 拼接url
         url += '?'
